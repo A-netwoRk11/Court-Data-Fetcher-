@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}{{ case.case_title }} - Court Data Fetcher{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- Back Button -->
+        <div class="mb-4">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Search
+            </a>
+        </div>
+
+        <!-- Case Header -->
+        <div class="case-details animate__animated animate__fadeIn">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h1 class="h2 mb-3">
+                        <i class="fas fa-gavel me-2 text-primary"></i>
+                        {{ case.case_title }}
+                    </h1>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-primary fs-6">
+                            <i class="fas fa-folder me-1"></i>
+                            {{ case.case_type.title() }} Case
+                        </span>
+                        <span class="badge bg-secondary fs-6">
+                            <i class="fas fa-hashtag me-1"></i>
+                            {{ case.case_number }}/{{ case.filing_year }}
+                        </span>
+                        {% if case.status %}
+                        <span class="badge bg-info fs-6">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {{ case.status }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Added: {{ case.created_at.strftime('%d %B %Y, %I:%M %p') }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Case Information Grid -->
+            <div class="row">
+                <!-- Parties Information -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users me-2"></i>
+                                Parties
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% set parties = case.parties_dict %}
+                            {% if parties %}
+                                {% if parties.get('petitioner') %}
+                                <div class="mb-3">
+                                    <h6 class="text-success">
+                                        <i class="fas fa-user me-2"></i>
+                                        Petitioner(s):
+                                    </h6>
+                                    <ul class="list-unstyled ms-3">
+                                        {% for petitioner in parties.petitioner %}
+                                        <li class="mb-1"><i class="fas fa-angle-right me-2 text-muted"></i>{{ petitioner }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+
+                                {% if parties.get('respondent') %}
+                                <div class="mb-3">
+                                    <h6 class="text-danger">
+                                        <i class="fas fa-user me-2"></i>
+                                        Respondent(s):
+                                    </h6>
+                                    <ul class="list-unstyled ms-3">
+                                        {% for respondent in parties.respondent %}
+                                        <li class="mb-1"><i class="fas fa-angle-right me-2 text-muted"></i>{{ respondent }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Party information not available
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dates and Status -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Important Dates
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if case.filing_date %}
+                            <div class="mb-3">
+                                <h6 class="text-primary">
+                                    <i class="fas fa-calendar-plus me-2"></i>
+                                    Filing Date:
+                                </h6>
+                                <p class="ms-3 mb-0">{{ case.filing_date.strftime('%d %B %Y') }}</p>
+                            </div>
+                            {% endif %}
+
+                            {% if case.next_hearing_date %}
+                            <div class="mb-3">
+                                <h6 class="text-warning">
+                                    <i class="fas fa-calendar-check me-2"></i>
+                                    Next Hearing:
+                                </h6>
+                                <p class="ms-3 mb-0">{{ case.next_hearing_date.strftime('%d %B %Y') }}</p>
+                                {% set days_until = (case.next_hearing_date - case.created_at.date()).days %}
+                                {% if days_until >= 0 %}
+                                <small class="text-muted ms-3">
+                                    ({{ days_until }} days {% if days_until == 0 %}today{% elif days_until == 1 %}from now{% else %}from now{% endif %})
+                                </small>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            {% if case.status %}
+                            <div class="mb-3">
+                                <h6 class="text-info">
+                                    <i class="fas fa-flag me-2"></i>
+                                    Status:
+                                </h6>
+                                <p class="ms-3 mb-0">{{ case.status }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Section -->
+            <div class="mt-5">
+                <h4 class="mb-4">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    Documents & Orders
+                    <span class="badge bg-secondary ms-2">{{ case.documents|length }}</span>
+                </h4>
+
+                {% if case.documents %}
+                <div class="row">
+                    {% for document in case.documents %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="document-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-file-pdf text-danger me-2"></i>
+                                    {{ document.document_type }}
+                                </h6>
+                                {% if document.document_date %}
+                                <small class="text-muted">
+                                    {{ document.document_date.strftime('%d/%m/%Y') }}
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            {% if document.description %}
+                            <p class="text-muted small mb-3">{{ document.description }}</p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if document.file_size %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-weight me-1"></i>
+                                        {{ document.file_size_mb }} MB
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <a href="{{ url_for('download_document', document_id=document.id) }}" 
+                                       class="btn btn-sm btn-outline-primary download-btn"
+                                       target="_blank">
+                                        <i class="fas fa-download me-1"></i>
+                                        Download
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            {% if document.download_count > 0 %}
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-download me-1"></i>
+                                Downloaded {{ document.download_count }} time(s)
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No documents are currently available for this case. Documents may be added as they become available from the court.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-5 pt-4 border-top">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Quick Actions:</h6>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('api_case', case_number=case.case_number) }}" 
+                               class="btn btn-outline-secondary btn-sm" target="_blank">
+                                <i class="fas fa-code me-1"></i>
+                                JSON API
+                            </a>
+                            <button class="btn btn-outline-info btn-sm" onclick="copyToClipboard('{{ case.case_title }}')">
+                                <i class="fas fa-copy me-1"></i>
+                                Copy Title
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="shareCase()">
+                                <i class="fas fa-share me-1"></i>
+                                Share
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <small class="text-muted">
+                            <i class="fas fa-database me-1"></i>
+                            Case ID: {{ case.id }} | 
+                            <i class="fas fa-globe me-1"></i>
+                            Source: Delhi High Court
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Download button click tracking
+    document.querySelectorAll('.download-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const originalText = this.innerHTML;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Downloading...';
+            this.disabled = true;
+            
+            // Re-enable after download starts
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+            }, 2000);
+        });
+    });
+
+    // Copy to clipboard function
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toast.innerHTML = `
+                <div class="toast show" role="alert">
+                    <div class="toast-header">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong class="me-auto">Copied!</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        Case title copied to clipboard
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 3000);
+        });
+    }
+
+    // Share case function
+    function shareCase() {
+        const url = window.location.href;
+        const title = document.title;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: title,
+                url: url
+            });
+        } else {
+            copyToClipboard(url);
+        }
+    }
+
+    // Auto-refresh next hearing countdown
+    function updateHearingCountdown() {
+        const hearingElements = document.querySelectorAll('[data-hearing-date]');
+        hearingElements.forEach(element => {
+            const hearingDate = new Date(element.dataset.hearingDate);
+            const now = new Date();
+            const diffTime = hearingDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > 0) {
+                element.textContent = `(${diffDays} days from now)`;
+            } else if (diffDays === 0) {
+                element.textContent = '(Today)';
+                element.className = 'text-danger fw-bold';
+            } else {
+                element.textContent = `(${Math.abs(diffDays)} days ago)`;
+                element.className = 'text-muted';
+            }
+        });
+    }
+
+    // Update countdown on load
+    updateHearingCountdown();
+    
+    // Add animation library
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if animate.css is loaded
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
+        document.head.appendChild(link);
+    });
+</script>
+{% endblock %}
+

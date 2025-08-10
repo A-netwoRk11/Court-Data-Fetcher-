@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - Court Data Fetcher{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-5 animate__animated animate__fadeInDown">
+            <i class="fas fa-chart-bar me-2"></i>
+            Application Statistics
+        </h1>
+
+        <!-- Overview Cards -->
+        <div class="row mb-5 animate__animated animate__fadeInUp">
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ stats.total_cases }}</h4>
+                                <p class="card-text">Total Cases</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-folder fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ stats.total_queries }}</h4>
+                                <p class="card-text">Total Searches</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-search fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card bg-info text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ stats.success_rate }}%</h4>
+                                <p class="card-text">Success Rate</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card bg-warning text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ stats.total_documents }}</h4>
+                                <p class="card-text">Documents</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-file-pdf fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Case Types Chart -->
+        <div class="row animate__animated animate__fadeInUp">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Cases by Type
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if stats.case_types %}
+                        <canvas id="caseTypesChart" width="400" height="300"></canvas>
+                        {% else %}
+                        <p class="text-muted text-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No case data available yet
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Case Types Breakdown
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if stats.case_types %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Case Type</th>
+                                        <th class="text-end">Count</th>
+                                        <th class="text-end">Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for case_type in stats.case_types %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-folder me-2 text-primary"></i>
+                                            {{ case_type.type.title() }}
+                                        </td>
+                                        <td class="text-end">{{ case_type.count }}</td>
+                                        <td class="text-end">
+                                            {{ "%.1f"|format((case_type.count / stats.total_cases * 100) if stats.total_cases > 0 else 0) }}%
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No cases found yet
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="row animate__animated animate__fadeInUp">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Performance Metrics
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-4">
+                                <div class="p-3 bg-success bg-opacity-10 rounded">
+                                    <h3 class="text-success">{{ stats.successful_queries }}</h3>
+                                    <p class="text-muted mb-0">Successful Searches</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <div class="p-3 bg-danger bg-opacity-10 rounded">
+                                    <h3 class="text-danger">{{ stats.total_queries - stats.successful_queries }}</h3>
+                                    <p class="text-muted mb-0">Failed Searches</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <div class="p-3 bg-info bg-opacity-10 rounded">
+                                    <h3 class="text-info">
+                                        {{ "%.1f"|format((stats.total_documents / stats.total_cases) if stats.total_cases > 0 else 0) }}
+                                    </h3>
+                                    <p class="text-muted mb-0">Avg Documents per Case</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="row mt-5 animate__animated animate__fadeInUp">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tools me-2"></i>
+                            Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>
+                                Search New Case
+                            </a>
+                            <button class="btn btn-secondary" onclick="refreshStats()">
+                                <i class="fas fa-sync-alt me-2"></i>
+                                Refresh Stats
+                            </button>
+                            <button class="btn btn-info" onclick="exportStats()">
+                                <i class="fas fa-download me-2"></i>
+                                Export Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Case Types Pie Chart
+    {% if stats.case_types %}
+    const ctx = document.getElementById('caseTypesChart').getContext('2d');
+    const caseTypesChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: [
+                {% for case_type in stats.case_types %}
+                '{{ case_type.type.title() }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for case_type in stats.case_types %}
+                    {{ case_type.count }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF',
+                    '#FF9F40',
+                    '#FF6384',
+                    '#C9CBCF',
+                    '#4BC0C0',
+                    '#36A2EB'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Refresh stats
+    function refreshStats() {
+        window.location.reload();
+    }
+
+    // Export stats (placeholder)
+    function exportStats() {
+        const statsData = {
+            totalCases: {{ stats.total_cases }},
+            totalQueries: {{ stats.total_queries }},
+            successRate: {{ stats.success_rate }},
+            totalDocuments: {{ stats.total_documents }},
+            caseTypes: [
+                {% for case_type in stats.case_types %}
+                {
+                    type: '{{ case_type.type }}',
+                    count: {{ case_type.count }}
+                },
+                {% endfor %}
+            ]
+        };
+        
+        const dataStr = JSON.stringify(statsData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'court_data_stats.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(url);
+    }
+    
+    // Add animation library
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if animate.css is loaded
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
+        document.head.appendChild(link);
+    });
+</script>
+{% endblock %}
+

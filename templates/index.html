@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Search Cases - Court Data Fetcher{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-3 animate__animated animate__fadeInDown">
+                <i class="fas fa-search me-3"></i>
+                Court Case Search
+            </h1>
+            <p class="lead text-muted animate__animated animate__fadeInUp">
+                Search for case information from Delhi High Court
+            </p>
+        </div>
+
+        <!-- Information panel for users -->
+        <div class="alert alert-info mb-4 animate__animated animate__fadeIn" id="searchTips">
+            <h5><i class="fas fa-info-circle me-2"></i>Search Tips</h5>
+            <ul class="mb-0">
+                <li>Try searching with just the numeric case number first (e.g., "789")</li>
+                <li>If not found, try with appropriate prefix based on case type:</li>
+                <ul>
+                    <li><strong>TAX cases:</strong> Try with prefixes like "ITXA", "TA", "ITA", or "ITAT" (e.g., "ITXA 789")</li>
+                    <li><strong>CRIMINAL cases:</strong> Try with prefixes like "CRL", "CRL.A." (e.g., "CRL 1890")</li>
+                    <li><strong>WRIT cases:</strong> Try with "W.P.(C)" or "W.P.(CRL)" (e.g., "W.P.(C) 123")</li>
+                    <li><strong>CIVIL cases:</strong> Try with "CS", "C.S.", or "CIVIL SUIT" (e.g., "CS 456")</li>
+                    <li><strong>COMPANY cases:</strong> Try with "CO", "CO.", or "COMP" (e.g., "CO 789")</li>
+                    <li><strong>ARBITRATION cases:</strong> Try with "ARB", "ARB.A.", or "ARB.P." (e.g., "ARB 123")</li>
+                </ul>
+                <li>Try different spacing options: with space, without space, or with hyphen (e.g., "CRL 123", "CRL123", "CRL-123")</li>
+                <li>Select the exact case type from the dropdown menu</li>
+                <li>Make sure to enter the correct filing year</li>
+                <li>Some cases may not be publicly available in the court database</li>
+            </ul>
+            <button class="btn btn-sm btn-outline-info mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#advancedTips" aria-expanded="false" aria-controls="advancedTips">
+                Show More Case Type Formats
+            </button>
+            <div class="collapse mt-2" id="advancedTips">
+                <div class="card card-body">
+                    <h6>Additional Case Type Formats:</h6>
+                    <ul>
+                        <li><strong>MATRIMONIAL cases:</strong> Try with "MAT", "MAT.A.", or "MCA" (e.g., "MAT 123")</li>
+                        <li><strong>MOTOR ACCIDENT cases:</strong> Try with "MAC", "MAC.APP.", or "MACT" (e.g., "MAC 123")</li>
+                        <li><strong>RENT cases:</strong> Try with "RC", "R.C.REV.", or "RCR" (e.g., "RC 123")</li>
+                        <li><strong>LABOR cases:</strong> Try with "LPA", "LAB", or "LC" (e.g., "LPA 123")</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="case-search-form animate__animated animate__fadeIn">
+            <form method="POST" action="{{ url_for('search_case') }}" id="searchForm">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label for="case_type" class="form-label">
+                            <i class="fas fa-folder case-type-icon"></i>
+                            Case Type *
+                        </label>
+                        <select class="form-select" id="case_type" name="case_type" required>
+                            <option value="">Select Case Type</option>
+                            {% for value, display in case_types.items() %}
+                                <option value="{{ value }}">{{ display }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-4">
+                        <label for="case_number" class="form-label">
+                            <i class="fas fa-hashtag case-type-icon"></i>
+                            Case Number *
+                        </label>
+                        <input type="text" class="form-control" id="case_number" name="case_number" 
+                               placeholder="e.g., 789, ITXA 789, CRL 456, W.P.(C) 123" required>
+                        <div class="form-text">Enter just the number or with appropriate prefix based on case type</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label for="filing_year" class="form-label">
+                            <i class="fas fa-calendar case-type-icon"></i>
+                            Filing Year *
+                        </label>
+                        <select class="form-select" id="filing_year" name="filing_year" required>
+                            <option value="">Select Year</option>
+                            {% for year in range(2024, 1949, -1) %}
+                                <option value="{{ year }}" {% if year == 2024 %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-search w-100" id="searchBtn">
+                            <i class="fas fa-search me-2"></i>
+                            Search Case
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mt-5 animate__animated animate__fadeInUp">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        How to Use
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-list-ol me-2"></i>Steps:</h6>
+                            <ol>
+                                <li>Select the appropriate case type</li>
+                                <li>Enter the case number (numbers only)</li>
+                                <li>Choose the filing year</li>
+                                <li>Click "Search Case" to fetch details</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-lightbulb me-2"></i>Tips:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Case numbers are usually numeric</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Don't include prefixes like "CRL" or "W.P.(C)"</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Filing year is when the case was filed</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Results include orders and judgments</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Cases -->
+        <div class="mt-5 animate__animated animate__fadeInUp">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-flask me-2"></i>
+                        Sample Cases (For Demo)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-primary h-100">
+                                <div class="card-body text-center d-flex flex-column">
+                                    <h6 class="card-title">Civil Case</h6>
+                                    <p class="card-text flex-grow-1">
+                                        <strong>Type:</strong> Civil<br>
+                                        <strong>Number:</strong> 1234<br>
+                                        <strong>Year:</strong> 2023
+                                    </p>
+                                    <button class="btn btn-outline-primary btn-sm mt-auto" onclick="fillSample('civil', '1234', '2023')">
+                                        <i class="fas fa-fill me-1"></i>Fill Form
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-success h-100">
+                                <div class="card-body text-center d-flex flex-column">
+                                    <h6 class="card-title">Criminal Case</h6>
+                                    <p class="card-text flex-grow-1">
+                                        <strong>Type:</strong> Criminal<br>
+                                        <strong>Number:</strong> 5678<br>
+                                        <strong>Year:</strong> 2024
+                                    </p>
+                                    <button class="btn btn-outline-success btn-sm mt-auto" onclick="fillSample('criminal', '5678', '2024')">
+                                        <i class="fas fa-fill me-1"></i>Fill Form
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-warning h-100">
+                                <div class="card-body text-center d-flex flex-column">
+                                    <h6 class="card-title">Writ Petition</h6>
+                                    <p class="card-text flex-grow-1">
+                                        <strong>Type:</strong> Writ<br>
+                                        <strong>Number:</strong> 9012<br>
+                                        <strong>Year:</strong> 2024
+                                    </p>
+                                    <button class="btn btn-outline-warning btn-sm mt-auto" onclick="fillSample('writ', '9012', '2024')">
+                                        <i class="fas fa-fill me-1"></i>Fill Form
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form submission handling
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('searchBtn');
+        const originalText = submitBtn.innerHTML;
+        showLoading(submitBtn);
+        
+        // Re-enable after 10 seconds in case of issues
+        setTimeout(function() {
+            hideLoading(submitBtn, originalText);
+        }, 10000);
+    });
+
+    // Fill sample case data
+    function fillSample(caseType, caseNumber, year) {
+        document.getElementById('case_type').value = caseType;
+        document.getElementById('case_number').value = caseNumber;
+        document.getElementById('filing_year').value = year;
+        
+        // Add visual feedback
+        const form = document.querySelector('.case-search-form');
+        form.style.border = '2px solid #28a745';
+        form.style.boxShadow = '0 0 15px rgba(40, 167, 69, 0.3)';
+        setTimeout(function() {
+            form.style.border = '1px solid rgba(0, 0, 0, 0.05)';
+            form.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.08)';
+        }, 2000);
+    }
+
+    // Input validation
+    document.getElementById('case_number').addEventListener('input', function(e) {
+        const value = e.target.value;
+        // Allow numbers, hyphens, dots, parentheses, and common legal abbreviations
+        const validPattern = /^[0-9A-Za-z\-\.\(\)\s\/]*$/;
+        
+        if (!validPattern.test(value)) {
+            e.target.setCustomValidity('Please enter a valid case number');
+        } else {
+            e.target.setCustomValidity('');
+        }
+    });
+
+    // Auto-format case number
+    document.getElementById('case_number').addEventListener('blur', function(e) {
+        const value = e.target.value.trim().toUpperCase();
+        e.target.value = value;
+    });
+    
+    // Add animation library
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if animate.css is loaded
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
+        document.head.appendChild(link);
+    });
+</script>
+{% endblock %}
+
