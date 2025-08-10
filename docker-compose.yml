@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  court-data-fetcher:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=False
+      - DATABASE_URL=mysql://root:password@mysql/court_data
+      - SECRET_KEY=change-this-in-production
+      - CHROME_HEADLESS=True
+    volumes:
+      - ./downloads:/app/downloads
+      - ./logs:/app/logs
+      - ./data:/app/data
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MySQL database
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=court_data
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+
+  # Optional: Redis for caching
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
